@@ -131,6 +131,8 @@ NOTES:
 
 
 #endif
+
+//bit部分！！
 /* 
  * bitAnd - x&y using only ~ and | 
  *   Example: bitAnd(6, 5) = 4
@@ -177,20 +179,20 @@ int logicalShift(int x, int n) {
 //这个个数。然后计算每4位1的个数，在用对应的4位进行存储。依次类推。
 // 最后整合得到16位中1的个数，即x中的1的个数。	
 int bitCount(int x) {
-	int temp1=0x55+0x55<<8;
-	int mask1=temp1+temp1<<16;//mask1  01010101 01010101 01010101 01010101
-	int temp2=0x33+0x33<<8;
-	int mask2=temp2+temp2<<16;//mask2  00110011 00110011 00110011 00110011
-	int temp3=0x0f+0x0f<<8;
-	int mask3=temp3+temp3<<16;//mask3  00001111 00001111 00001111 00001111
-	int mask4=0xff+0xff<<16;  //mask4  00000000 11111111 00000000 11111111
-	int mask5=0xff+0xff<<8;   //mask5  00000000 00000000 11111111 11111111
-	int result=x&mask1+(x>>1)&mask1;
-	result=result+(result>>2)&mask2;
-	result=result+(result>>4)&mask3;
-	result=result+(result>>8)&mask4;
-	result=result+(result>>16)&mask5;
-	return rsult;
+	int temp1=0x55+(0x55<<8);
+	int mask1=temp1+(temp1<<16);//mask1  01010101 01010101 01010101 01010101
+	int temp2=0x33+(0x33<<8);
+	int mask2=temp2+(temp2<<16);//mask2  00110011 00110011 00110011 00110011
+	int temp3=0x0f+(0x0f<<8);
+	int mask3=temp3+(temp3<<16);//mask3  00001111 00001111 00001111 00001111
+	int mask4=0xff+(0xff<<16);  //mask4  00000000 11111111 00000000 11111111
+	int mask5=0xff+(0xff<<8);   //mask5  00000000 00000000 11111111 11111111
+	int result=(x&mask1)+((x>>1)&mask1);
+	result=result+((result>>2)&mask2);
+	result=result+((result>>4)&mask3);
+	result=result+((result>>8)&mask4);
+	result=result+((result>>16)&mask5);
+	return result;
 }
 /*
  * bang - Compute !x without using !
@@ -236,6 +238,11 @@ int fitsBits(int x, int n) {
 	int shiftX=(x<<shiftnum)>>shiftnum;//即只保留x的n位
 	return !(x^shiftX);
 }
+
+
+
+
+//整数部分！！
 /* 
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
  *  Round toward zero
@@ -248,7 +255,7 @@ int fitsBits(int x, int n) {
 //但是x小于0的时候，不能保证向0取整，要给x加上一个（1<<n）-1的偏置
 int divpwr2(int x, int n) {
 	int sign=x>>31;//算术右移
-	int mask=1<<n+~0;//~0为32个1 。得到2^n-1，即偏置
+	int mask=(1<<n)+(~0);//~0为32个1 。得到2^n-1，即偏置
 	int bias=sign &mask;
 	return (x+bias)>>n;
 }
@@ -281,20 +288,37 @@ int isPositive(int x) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-    
-    return 2;
+    int signX=x>>31&1;//获取符号位
+    int signY=y>>31&1;
+    int temp=x+((~y)+1);//temp为同号情况下的x-y的值.
+    int signSame=(!(signX^signY))&(temp>>31);//这是同号情况下，根据temp的符号位来判断x与y的大小
+    int signDiff=signX&(!signY);//当x为正，y为负时，signdiff为1；即x>y
+    return signSame|signDiff;
 }
 /*
- * ilog2 - return floor(log base 2 of x), where x > 0
+ * ilog2 - return floor(log base 2 of x), where x > 0//默认x大于0
  *   Example: ilog2(16) = 4
  *   Legal ops: ! ~ & ^ | + << >>
  *   Max ops: 90
  *   Rating: 4
  */
+//即找第一个为1的比特位在哪的问题
+//利用二分法找，时间复杂度O(lgn)
 int ilog2(int x) {
-	
-  return 2;
+    int bitsNumber=(!!(x>>16))<<4;//若x在16到31位中有值，则bitsnumber为16
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+8)))<<3);
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+4)))<<2);
+    bitsNumber=bitsNumber+((!!(x>>(bitsNumber+2)))<<1);
+    bitsNumber=bitsNumber+(!!(x>>(bitsNumber+1)));
+    //由于限制了操作，只能用加法来表示
+    bitsNumber=bitsNumber+(!!bitsNumber)+(~0)+(!(1^x));//x已经在之前被>>16改变了
+    return bitsNumber;
 }
+
+
+
+
+//浮点数部分！
 /* 
  * float_neg - Return bit-level equivalent of expression -f for
  *   floating point argument f.
@@ -306,8 +330,12 @@ int ilog2(int x) {
  *   Max ops: 10
  *   Rating: 2
  */
+//将以unsigned int形式传进来的参数，返回对应浮点数参数-f相等的二进制值
+//终于可以使用条件判断语句和循环语句了，憋死了
 unsigned float_neg(unsigned uf) {
- return 2;
+    unsigned temp=uf&0x7fffffff;//字面常量的限制也没有了
+    if(temp>0x7f800000)return uf;//NAN的情况
+    return uf^0x80000000;
 }
 /* 
  * float_i2f - Return bit-level equivalent of expression (float) x
@@ -318,8 +346,43 @@ unsigned float_neg(unsigned uf) {
  *   Max ops: 30
  *   Rating: 4
  */
+//将x的值当做浮点数的值，翻译成二进制并且返回
+//返回结果 (sign<<31)|(exponent<<23)|fraction
 unsigned float_i2f(int x) {
-  return 2;
+    int sign=x>>31&1;
+    int exponent;
+    int fraction;
+    int fraction_mask;
+    int bias=127;//float的指数位偏置
+    int i;
+    int delta;
+    //分情况讨论
+    if(x==0)return 0;
+    else if(x==0x80000000){
+        exponent=31+bias;//指数位应为这么多，因为最后的E要减去bias
+        //todo 还要设置fraction数值
+    }
+    else {
+        if(sign)x=-x;//保证x为正数
+        i=30;
+        //i代表x有的比特位数
+        while (!(x>>i)) {
+            i--;
+        }
+        exponent=i+bias;
+        x<<=31-i;//去掉x高位的0；
+        fraction_mask=(1<<23)-1;
+        fraction=fraction_mask&(x>>8);
+        x=x&0xff;
+        delta = x > 128 || ((x == 128) && (fraction & 1));//向0舍入
+        fraction += delta;
+        //防止舍入之后，fraction又超过23位
+        if(fraction >> 23) {
+            fraction &= fraction_mask;
+            exponent += 1;
+        }
+    }
+    return (sign<<31)|(exponent<<23)|fraction;
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
@@ -332,6 +395,15 @@ unsigned float_i2f(int x) {
  *   Max ops: 30
  *   Rating: 4
  */
+//
 unsigned float_twice(unsigned uf) {
-  return 2;
+    unsigned result=uf;
+    unsigned sign=(uf>>31)<<31;
+    unsigned exponent=(uf-sign)>>23;
+    //当指数位exponent为11111111时,即2f为NAN
+    if(!(exponent^0xff))return result;
+    //当指数位exponent为11111110时，返回无穷
+    else if(!(0xff-exponent-1))return sign|(0xff<<23);
+    else if(exponent)return result+0x00800000;
+    return sign|(result<<1);
 }
