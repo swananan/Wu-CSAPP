@@ -152,7 +152,7 @@ int bitAnd(int x, int y) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-	return (x>>(n<<3))&0x11;
+	return (x>>(n<<3))&0xff;
 
 }
 /* 
@@ -163,9 +163,11 @@ int getByte(int x, int n) {
  *   Max ops: 20
  *   Rating: 3 
  */
+//利用掩码mask，把算术右移改成逻辑右移
 int logicalShift(int x, int n) {
-	int mask=~(((1<<31)&x)>>n);
-	return x&mask;
+	int mask=~(1<<31);//mask为0x7fffffff
+    mask=((mask>>n)<<1)+1;
+	return (x>>n)&mask;
 }
 /*
  * bitCount - returns count of number of 1's in word
@@ -179,19 +181,23 @@ int logicalShift(int x, int n) {
 //这个个数。然后计算每4位1的个数，在用对应的4位进行存储。依次类推。
 // 最后整合得到16位中1的个数，即x中的1的个数。	
 int bitCount(int x) {
-	int temp1=0x55+(0x55<<8);
-	int mask1=temp1+(temp1<<16);//mask1  01010101 01010101 01010101 01010101
-	int temp2=0x33+(0x33<<8);
-	int mask2=temp2+(temp2<<16);//mask2  00110011 00110011 00110011 00110011
-	int temp3=0x0f+(0x0f<<8);
-	int mask3=temp3+(temp3<<16);//mask3  00001111 00001111 00001111 00001111
-	int mask4=0xff+(0xff<<16);  //mask4  00000000 11111111 00000000 11111111
-	int mask5=0xff+(0xff<<8);   //mask5  00000000 00000000 11111111 11111111
-	int result=(x&mask1)+((x>>1)&mask1);
-	result=result+((result>>2)&mask2);
-	result=result+((result>>4)&mask3);
-	result=result+((result>>8)&mask4);
-	result=result+((result>>16)&mask5);
+	int temp1=0x55|(0x55<<8);
+	int mask1=temp1|(temp1<<16);//mask1  01010101 01010101 01010101 01010101
+	int temp2=0x33|(0x33<<8);
+	int mask2=temp2|(temp2<<16);//mask2  00110011 00110011 00110011 00110011
+	int temp3=0x0f|(0x0f<<8);
+	int mask3=temp3|(temp3<<16);//mask3  00001111 00001111 00001111 00001111
+	int mask4=0xff|(0xff<<16);  //mask4  00000000 11111111 00000000 11111111
+	int mask5=0xff|(0xff<<8);   //mask5  00000000 00000000 11111111 11111111
+    int result;
+    result=(x&mask1)+((x>>1)&mask1);
+	result=(result&mask2)+((result>>2)&mask2);
+	//result=(result&mask3)+((result>>4)&mask3);
+	//result=(result&mask4)+((result>>8)&mask4);
+	//result=(result&mask5)+((result>>16)&mask5);
+    result=(result+(result>>4))&mask3;
+    result=(result+(result>>8))&mask4;
+    result=(result+(result>>16))&mask5;
 	return result;
 }
 /*
@@ -203,8 +209,9 @@ int bitCount(int x) {
  */
 //先位运算出x的负数，然后和x比较
 int bang(int x) {
-	int negativeX=~x+1;
+	int negativeX=(~x)+1;
 	int temp=negativeX|x;
+    temp=temp>>31;
 	return temp+1;
 }
 /* 
@@ -234,9 +241,8 @@ int isTmin(int x){
 //要想x能被n位补码表示，则x的位数不能超过n位
 //即判断x的位数大小
 int fitsBits(int x, int n) {
-	int shiftnum=32-n;
-	int shiftX=(x<<shiftnum)>>shiftnum;//即只保留x的n位
-	return !(x^shiftX);
+    int shiftNum=32+(~n+1);//32-n
+    return !(x^((x<<shiftNum)>>shiftNum));
 }
 
 
@@ -288,11 +294,11 @@ int isPositive(int x) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-    int signX=x>>31&1;//获取符号位
-    int signY=y>>31&1;
-    int temp=x+((~y)+1);//temp为同号情况下的x-y的值.
+    int signX=(x>>31)&1;//获取符号位
+    int signY=(y>>31)&1;
+    int temp=x+((~y));//temp为同号情况下的x-y的值.
     int signSame=(!(signX^signY))&(temp>>31);//这是同号情况下，根据temp的符号位来判断x与y的大小
-    int signDiff=signX&(!signY);//当x为正，y为负时，signdiff为1；即x>y
+    int signDiff=signX&(!signY);//当x为正，y为负时，signdiff为1，即x>y
     return signSame|signDiff;
 }
 /*
@@ -349,40 +355,36 @@ unsigned float_neg(unsigned uf) {
 //将x的值当做浮点数的值，翻译成二进制并且返回
 //返回结果 (sign<<31)|(exponent<<23)|fraction
 unsigned float_i2f(int x) {
+    if(!x)return x;
     int sign=x>>31&1;
     int exponent;
     int fraction;
     int fraction_mask;
     int bias=127;//float的指数位偏置
-    int i;
-    int delta;
-    //分情况讨论
-    if(x==0)return 0;
-    else if(x==0x80000000){
-        exponent=31+bias;//指数位应为这么多，因为最后的E要减去bias
-        //todo 还要设置fraction数值
+    if(sign)x=-x;//保证x值为正数
+    int i=30;//i为x究竟有多少比特位
+    while (!(x>>i)) {
+        i=i-1;
     }
-    else {
-        if(sign)x=-x;//保证x为正数
-        i=30;
-        //i代表x有的比特位数
-        while (!(x>>i)) {
-            i--;
+    exponent=bias+i;
+    if (i<=23) {
+        fraction=x<<(23-i);
+    }
+    else{
+        fraction=x>>(i-23);
+        fraction_mask=(1<<(i-23))-1;
+        //这里要考虑舍入情况
+        if ((x&fraction_mask)>(1<<(i-24))) {
+            fraction=fraction+1;
         }
-        exponent=i+bias;
-        x<<=31-i;//去掉x高位的0；
-        fraction_mask=(1<<23)-1;
-        fraction=fraction_mask&(x>>8);
-        x=x&0xff;
-        delta = x > 128 || ((x == 128) && (fraction & 1));//向0舍入
-        fraction += delta;
-        //防止舍入之后，fraction又超过23位
-        if(fraction >> 23) {
-            fraction &= fraction_mask;
-            exponent += 1;
+        if ((x&fraction_mask)==(1<<(i-24))&&(fraction&1)) {
+            fraction=fraction+1;
+        }
+        if (fraction==(1<<24)) {
+            exponent=exponent+1;
         }
     }
-    return (sign<<31)|(exponent<<23)|fraction;
+    return (sign<<31)|(exponent<<23)|(fraction&0x7fffff);
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
