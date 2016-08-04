@@ -355,36 +355,62 @@ unsigned float_neg(unsigned uf) {
 //将x的值当做浮点数的值，翻译成二进制并且返回
 //返回结果 (sign<<31)|(exponent<<23)|fraction
 unsigned float_i2f(int x) {
-    if(!x)return x;
-    int sign=x>>31&1;
-    int exponent;
-    int fraction;
-    int fraction_mask;
-    int bias=127;//float的指数位偏置
-    if(sign)x=-x;//保证x值为正数
-    int i=30;//i为x究竟有多少比特位
-    while (!(x>>i)) {
-        i=i-1;
+//    if(!x)return x;
+//    int sign=x>>31&1;
+//    int exponent;
+//    int fraction;
+//    int fraction_mask;
+//    int bias=127;//float的指数位偏置
+//    if(sign)x=-x;//保证x值为正数
+//    int i=30;//i为x究竟有多少比特位
+//    while (!(x>>i)) {
+//        i=i-1;
+//    }
+//    exponent=bias+i;
+//    if (i<=23) {
+//        fraction=x<<(23-i);
+//    }
+//    else{
+//        fraction=x>>(i-23);
+//        fraction_mask=(1<<(i-23))-1;
+//        //这里要考虑舍入情况
+//        if ((x&fraction_mask)>(1<<(i-24))) {
+//            fraction=fraction+1;
+//        }
+//        if ((x&fraction_mask)==(1<<(i-24))&&(fraction&1)) {
+//            fraction=fraction+1;
+//        }
+//        if (fraction==(1<<24)) {
+//            exponent=exponent+1;
+//        }
+//    }
+//    return (sign<<31)|(exponent<<23)|(fraction&0x7fffff);
+    unsigned shiftLeft=0;
+    unsigned afterShift, tmp, flag;
+    unsigned absX=x;
+    unsigned sign=0;
+    if (x==0) return 0;
+    if (x<0)
+    {
+        sign=0x80000000;
+        absX=-x;
     }
-    exponent=bias+i;
-    if (i<=23) {
-        fraction=x<<(23-i);
+    afterShift=absX;
+    while (1)
+    {
+        tmp=afterShift;
+        afterShift<<=1;
+        shiftLeft++;
+        if (tmp & 0x80000000) break;
     }
-    else{
-        fraction=x>>(i-23);
-        fraction_mask=(1<<(i-23))-1;
-        //这里要考虑舍入情况
-        if ((x&fraction_mask)>(1<<(i-24))) {
-            fraction=fraction+1;
-        }
-        if ((x&fraction_mask)==(1<<(i-24))&&(fraction&1)) {
-            fraction=fraction+1;
-        }
-        if (fraction==(1<<24)) {
-            exponent=exponent+1;
-        }
-    }
-    return (sign<<31)|(exponent<<23)|(fraction&0x7fffff);
+    if ((afterShift & 0x01ff)>0x0100)
+        flag=1;
+    else if ((afterShift & 0x03ff)==0x0300)
+        flag=1;
+    else
+        flag=0;
+    
+    return sign + (afterShift>>9) + ((159-shiftLeft)<<23) + flag;
 }
 /* 
  * float_twice - Return bit-level equivalent of expression 2*f for
