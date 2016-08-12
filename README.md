@@ -3,7 +3,7 @@
 
 * L1(datalab)：操作 bits
 * L2(bomblab)：拆除一个二进制炸弹
-* L3(attacklab)：基本的代码注入攻击
+* L3(buflab)：缓冲区溢出
 * L4(cachelab)：做一个缓存模拟器并且进行优化，与此同时学习如何在程序中利用局部性
 * L5(tshlab)：写一个自己的 Unix shell
 * L6(malloclab)：自己实现 malloc 功能，借此了解系统层次编程
