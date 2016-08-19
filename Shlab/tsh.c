@@ -329,6 +329,9 @@ void do_bgfg(char **argv)
     }
     return;
 }
+void do_echo(char**argv){
+    printf("%s",argv[1]);
+}
 
 /* 
  * waitfg - Block until process pid is no longer the foreground process
@@ -380,7 +383,8 @@ void sigchld_handler(int sig)
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  *    user types ctrl-c at the keyboard.  Catch it and send it along
  *    to the foreground job.  
- */来自键盘的中断,给前台进程组发送SIGINT信号
+ */
+ //来自键盘的中断,给前台进程组发送SIGINT信号
 void sigint_handler(int sig) 
 {
     pid_t pid= fgpid(jobs);
@@ -397,7 +401,8 @@ void sigint_handler(int sig)
  * sigtstp_handler - The kernel sends a SIGTSTP to the shell whenever
  *     the user types ctrl-z at the keyboard. Catch it and suspend the
  *     foreground job by sending it a SIGTSTP.  
- */暂停前台进程组，即挂起
+ */
+ //暂停前台进程组，即挂起
 void sigtstp_handler(int sig) 
 {
     //printf("stop sig \n");

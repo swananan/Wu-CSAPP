@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C++ Launch (GDB)",
+            "type": "cppdbg",
+            "request": "launch",
+            "launchOptionType": "Local",
+            "targetArchitecture": "x64",
+            "program": "${/Users/wuzhenzhong/GitHub/CSAPP_LAB/Shlab}/a.out",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${/Users/wuzhenzhong/GitHub/CSAPP_LAB/Shlab}",
+            "environment": [],
+            "externalConsole": true
+        },
+        {
+            "name": "C++ Attach (GDB)",
+            "type": "cppdbg",
+            "request": "launch",
+            "launchOptionType": "Local",
+            "targetArchitecture": "x64",
+            "program": "${/Users/wuzhenzhong/GitHub/CSAPP_LAB/Shlab}/a.out",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${/Users/wuzhenzhong/GitHub/CSAPP_LAB/Shlab}",
+            "environment": [],
+            "processId": "3433",
+            "externalConsole": false
+        }
+    ]
+}
